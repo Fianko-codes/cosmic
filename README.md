@@ -3,7 +3,7 @@
 An interactive 3D solar system built with Three.js. Click on planets to learn more about them!
 
 ## Try it out
-https://Fianko-codes.github.io/cosmic-portfolio
+https://Fianko-codes.github.io/cosmic
 
 ## Features
 - Interactive 3D planets
