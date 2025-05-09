@@ -3,64 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enhanced Solar System - Fianko-codes</title>
+    <title>Cosmic Solar System - Fianko-codes</title>
     <style>
         body { 
             margin: 0; 
             overflow: hidden; 
             background: black;
-            font-family: 'Arial', sans-serif;
-        }
-        
-        #loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: black;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #0ff;
-            font-size: 24px;
-            z-index: 1000;
+            font-family: Arial, sans-serif;
         }
 
-        .progress {
-            width: 200px;
-            height: 4px;
-            background: rgba(0, 255, 255, 0.2);
-            border-radius: 2px;
-            margin-top: 10px;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background: #0ff;
-            width: 0%;
-            border-radius: 2px;
-            transition: width 0.3s;
-        }
-
-        #info-panel {
+        #info {
             position: fixed;
             top: 20px;
             left: 20px;
             background: rgba(0, 0, 0, 0.8);
-            color: #fff;
+            color: #0ff;
             padding: 20px;
             border-radius: 10px;
             max-width: 300px;
             display: none;
             border: 1px solid #0ff;
-            backdrop-filter: blur(10px);
-        }
-
-        #info-panel h2 {
-            margin-top: 0;
-            color: #0ff;
         }
 
         #controls {
@@ -90,43 +52,18 @@
             background: #00ffff80;
             transform: scale(1.05);
         }
-
-        #stats {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            color: #0ff;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 14px;
-            border: 1px solid #0ff;
-        }
     </style>
 </head>
 <body>
-    <div id="loading">
-        Loading Solar System...
-        <div class="progress">
-            <div class="progress-bar"></div>
-        </div>
-    </div>
-
-    <div id="info-panel">
-        <h2 id="planet-name"></h2>
-        <p id="planet-info"></p>
-        <p id="planet-stats"></p>
+    <div id="info">
+        <h2 id="planetName"></h2>
+        <p id="planetInfo"></p>
     </div>
 
     <div id="controls">
-        <button class="btn" id="toggle-orbits">Toggle Orbits</button>
-        <button class="btn" id="toggle-rotation">Toggle Rotation</button>
-        <button class="btn" id="reset-camera">Reset View</button>
-    </div>
-
-    <div id="stats">
-        FPS: <span id="fps">60</span><br>
-        Distance: <span id="distance">0</span> AU
+        <button class="btn" id="toggleOrbits">Toggle Orbits</button>
+        <button class="btn" id="toggleRotation">Toggle Rotation</button>
+        <button class="btn" id="resetCamera">Reset View</button>
     </div>
 
     <script type="importmap">
@@ -140,166 +77,106 @@
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
         // Scene setup
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
-        
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 0.5;
         document.body.appendChild(renderer.domElement);
-
-        // Loading manager
-        const loadingManager = new THREE.LoadingManager();
-        const progressBar = document.querySelector('.progress-bar');
-        const loadingScreen = document.getElementById('loading');
-
-        loadingManager.onProgress = (url, loaded, total) => {
-            progressBar.style.width = (loaded / total * 100) + '%';
-        };
-
-        loadingManager.onLoad = () => {
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-            }, 500);
-        };
-
-        // Textures
-        const textureLoader = new THREE.TextureLoader(loadingManager);
-        const cubeTextureLoader = new THREE.CubeTextureLoader(loadingManager);
-
-        // HDR Background
-        new RGBELoader(loadingManager)
-            .load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/equirectangular/starmap_4k.hdr', (texture) => {
-                texture.mapping = THREE.EquirectangularReflectionMapping;
-                scene.background = texture;
-            });
 
         // Controls
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.minDistance = 20;
-        controls.maxDistance = 500;
-        camera.position.set(0, 100, 200);
+        camera.position.set(0, 30, 100);
 
         // Lights
         const ambientLight = new THREE.AmbientLight(0x333333);
         scene.add(ambientLight);
         
         const sunLight = new THREE.PointLight(0xffffff, 2);
-        sunLight.castShadow = true;
         scene.add(sunLight);
 
-        // Star field
-        const starCount = 10000;
+        // Background stars
         const starGeometry = new THREE.BufferGeometry();
-        const starPositions = new Float32Array(starCount * 3);
-        const starColors = new Float32Array(starCount * 3);
-
-        for (let i = 0; i < starCount * 3; i += 3) {
-            const radius = Math.random() * 1000 + 500;
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos(Math.random() * 2 - 1);
-            
-            starPositions[i] = radius * Math.sin(phi) * Math.cos(theta);
-            starPositions[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
-            starPositions[i + 2] = radius * Math.cos(phi);
-
-            const color = new THREE.Color();
-            color.setHSL(Math.random(), 0.5, 0.8);
-            starColors[i] = color.r;
-            starColors[i + 1] = color.g;
-            starColors[i + 2] = color.b;
+        const starVertices = [];
+        for(let i = 0; i < 10000; i++) {
+            const x = THREE.MathUtils.randFloatSpread(2000);
+            const y = THREE.MathUtils.randFloatSpread(2000);
+            const z = THREE.MathUtils.randFloatSpread(2000);
+            starVertices.push(x, y, z);
         }
-
-        starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-        starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
-
-        const starField = new THREE.Points(
-            starGeometry,
-            new THREE.PointsMaterial({
-                size: 2,
-                vertexColors: true,
-                transparent: true,
-                opacity: 0.8
-            })
-        );
-        scene.add(starField);
+        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        const starMaterial = new THREE.PointsMaterial({ color: 0xFFFFFF, size: 0.7 });
+        const stars = new THREE.Points(starGeometry, starMaterial);
+        scene.add(stars);
 
         // Planet data
         const planets = [
             {
                 name: 'Sun',
-                radius: 10,
+                radius: 8,
                 distance: 0,
-                textureUrl: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/sun.jpg',
-                info: 'The Sun is the star at the center of our Solar System.',
+                color: 0xffdd00,
                 emissive: true,
-                glow: true
+                info: 'The star at the center of our Solar System'
             },
             {
                 name: 'Mercury',
-                radius: 0.8,
+                radius: 1,
                 distance: 20,
-                textureUrl: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mercury.jpg',
-                info: 'Mercury is the smallest and innermost planet in the Solar System.'
+                color: 0x888888,
+                info: 'Smallest planet, closest to the Sun'
             },
             {
                 name: 'Venus',
-                radius: 1.2,
+                radius: 1.5,
                 distance: 30,
-                textureUrl: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/venus.jpg',
-                info: 'Venus is the second planet from the Sun and the hottest planet in our solar system.'
+                color: 0xffd700,
+                info: 'Second planet from the Sun, hottest in our system'
             },
             {
                 name: 'Earth',
-                radius: 1.5,
+                radius: 2,
                 distance: 40,
-                textureUrl: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth.jpg',
-                bumpUrl: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_normal.jpg',
-                specularUrl: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_specular.jpg',
-                info: 'Earth is the third planet from the Sun and the only astronomical object known to harbor life.',
-                clouds: true
+                color: 0x2233ff,
+                info: 'Our home planet, the only known planet with life'
             },
             {
                 name: 'Mars',
-                radius: 1,
+                radius: 1.7,
                 distance: 50,
-                textureUrl: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/mars.jpg',
-                info: 'Mars is often called the "Red Planet" due to its reddish appearance.'
+                color: 0xff4400,
+                info: 'The Red Planet, fourth from the Sun'
             },
             {
                 name: 'Jupiter',
                 radius: 4,
                 distance: 70,
-                textureUrl: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/jupiter.jpg',
-                info: 'Jupiter is the largest planet in our solar system.'
+                color: 0xffaa88,
+                info: 'Largest planet in our Solar System'
             },
             {
                 name: 'Saturn',
                 radius: 3.5,
                 distance: 90,
-                textureUrl: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/saturn.jpg',
-                info: 'Saturn is famous for its spectacular ring system.',
-                rings: true
+                color: 0xffcc88,
+                info: 'Known for its beautiful rings',
+                hasRings: true
             },
             {
                 name: 'Uranus',
-                radius: 2.5,
+                radius: 3,
                 distance: 110,
-                textureUrl: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/uranus.jpg',
-                info: 'Uranus is the only planet that rotates on its side.'
+                color: 0x88ffff,
+                info: 'Ice giant with a tilted axis'
             },
             {
                 name: 'Neptune',
-                radius: 2.5,
+                radius: 3,
                 distance: 130,
-                textureUrl: 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/neptune.jpg',
-                info: 'Neptune is the windiest planet, with speeds reaching 2,100 km/h.'
+                color: 0x4444ff,
+                info: 'The windiest planet'
             }
         ];
 
@@ -307,58 +184,41 @@
         const orbitLines = [];
 
         // Create planets
-        planets.forEach((planetData, index) => {
-            // Create orbit line
-            if (index > 0) {
-                const orbitGeometry = new THREE.RingGeometry(planetData.distance, planetData.distance + 0.1, 128);
+        planets.forEach((data, index) => {
+            // Create orbit
+            if (index > 0) { // Skip Sun's orbit
+                const orbitGeometry = new THREE.RingGeometry(data.distance, data.distance + 0.1, 64);
                 const orbitMaterial = new THREE.MeshBasicMaterial({
                     color: 0x444444,
                     side: THREE.DoubleSide,
                     transparent: true,
                     opacity: 0.3
                 });
-                const orbitLine = new THREE.Mesh(orbitGeometry, orbitMaterial);
-                orbitLine.rotation.x = Math.PI / 2;
-                scene.add(orbitLine);
-                orbitLines.push(orbitLine);
+                const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
+                orbit.rotation.x = Math.PI / 2;
+                scene.add(orbit);
+                orbitLines.push(orbit);
             }
 
             // Create planet
-            const geometry = new THREE.SphereGeometry(planetData.radius, 32, 32);
-            const material = new THREE.MeshPhongMaterial();
-
-            // Load texture
-            textureLoader.load(planetData.textureUrl, texture => {
-                material.map = texture;
-                if (planetData.bumpUrl) {
-                    textureLoader.load(planetData.bumpUrl, bumpMap => {
-                        material.bumpMap = bumpMap;
-                        material.bumpScale = 0.05;
-                    });
-                }
-                if (planetData.specularUrl) {
-                    textureLoader.load(planetData.specularUrl, specMap => {
-                        material.specularMap = specMap;
-                    });
-                }
+            const geometry = new THREE.SphereGeometry(data.radius, 32, 32);
+            const material = new THREE.MeshPhongMaterial({
+                color: data.color,
+                shininess: 30
             });
 
-            if (planetData.emissive) {
-                material.emissive = new THREE.Color(0xffff00);
+            if (data.emissive) {
+                material.emissive = new THREE.Color(data.color);
                 material.emissiveIntensity = 0.5;
             }
 
             const planet = new THREE.Mesh(geometry, material);
-            
+
             // Add rings for Saturn
-            if (planetData.rings) {
-                const ringGeometry = new THREE.RingGeometry(
-                    planetData.radius * 1.4,
-                    planetData.radius * 2,
-                    64
-                );
+            if (data.hasRings) {
+                const ringGeometry = new THREE.RingGeometry(data.radius * 1.4, data.radius * 2, 32);
                 const ringMaterial = new THREE.MeshBasicMaterial({
-                    map: textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/saturn_rings.jpg'),
+                    color: 0xffaa00,
                     side: THREE.DoubleSide,
                     transparent: true,
                     opacity: 0.8
@@ -368,28 +228,95 @@
                 planet.add(rings);
             }
 
-            // Add clouds for Earth
-            if (planetData.clouds) {
-                const cloudGeometry = new THREE.SphereGeometry(
-                    planetData.radius * 1.01,
-                    32,
-                    32
-                );
-                const cloudMaterial = new THREE.MeshPhongMaterial({
-                    map: textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_clouds.jpg'),
-                    transparent: true,
-                    opacity: 0.8
+            // Add to scene
+            const planetGroup = new THREE.Group();
+            planet.position.x = data.distance;
+            planetGroup.add(planet);
+            scene.add(planetGroup);
+
+            planetObjects.push({
+                mesh: planet,
+                group: planetGroup,
+                data: data,
+                rotationSpeed: 0.01 / (index + 1),
+                orbitSpeed: 0.005 / Math.sqrt(index + 1)
+            });
+        });
+
+        // UI Elements
+        const info = document.getElementById('info');
+        const planetName = document.getElementById('planetName');
+        const planetInfo = document.getElementById('planetInfo');
+        const toggleOrbitsBtn = document.getElementById('toggleOrbits');
+        const toggleRotationBtn = document.getElementById('toggleRotation');
+        const resetCameraBtn = document.getElementById('resetCamera');
+
+        // Event handlers
+        let rotationEnabled = true;
+
+        toggleOrbitsBtn.addEventListener('click', () => {
+            orbitLines.forEach(orbit => orbit.visible = !orbit.visible);
+        });
+
+        toggleRotationBtn.addEventListener('click', () => {
+            rotationEnabled = !rotationEnabled;
+            toggleRotationBtn.textContent = rotationEnabled ? 'Stop Rotation' : 'Start Rotation';
+        });
+
+        resetCameraBtn.addEventListener('click', () => {
+            camera.position.set(0, 30, 100);
+            camera.lookAt(0, 0, 0);
+        });
+
+        // Click interaction
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('click', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(
+                planetObjects.map(obj => obj.mesh)
+            );
+
+            if (intersects.length > 0) {
+                const planet = planetObjects.find(p => p.mesh === intersects[0].object);
+                planetName.textContent = planet.data.name;
+                planetInfo.textContent = planet.data.info;
+                info.style.display = 'block';
+            } else {
+                info.style.display = 'none';
+            }
+        });
+
+        // Animation
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (rotationEnabled) {
+                planetObjects.forEach(obj => {
+                    // Rotate planet
+                    obj.mesh.rotation.y += obj.rotationSpeed;
+                    
+                    // Orbit around sun
+                    obj.group.rotation.y += obj.orbitSpeed;
                 });
-                const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
-                planet.add(clouds);
             }
 
-            // Add glow effect for Sun
-            if (planetData.glow) {
-                const glowMaterial = new THREE.SpriteMaterial({
-                    map: textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/glow.png'),
-                    color: 0xffff00,
-                    transparent: true,
-                    blending: THREE.AdditiveBlending
-                });
-                const glow = new
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
