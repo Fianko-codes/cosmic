@@ -3,38 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Realistic Solar System - Fianko-codes</title>
+    <title>Cosmic Solar System - Fianko-codes</title>
     <style>
         body { 
             margin: 0; 
             overflow: hidden; 
             background: black;
             font-family: Arial, sans-serif;
-            color: #0ff;
-        }
-
-        #info {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            max-width: 300px;
-            display: none;
-            border: 1px solid #0ff;
-            backdrop-filter: blur(5px);
-        }
-
-        #timeScale {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid #0ff;
-            backdrop-filter: blur(5px);
         }
 
         #controls {
@@ -48,7 +23,6 @@
             padding: 15px;
             border-radius: 10px;
             border: 1px solid #0ff;
-            backdrop-filter: blur(5px);
         }
 
         .btn {
@@ -66,37 +40,13 @@
             background: #00ffff80;
             transform: scale(1.05);
         }
-
-        #speedSlider {
-            width: 150px;
-            margin: 10px 0;
-        }
-
-        .planet-label {
-            color: #0ff;
-            font-size: 12px;
-            margin-top: 5px;
-        }
     </style>
 </head>
 <body>
-    <div id="info">
-        <h2 id="planetName"></h2>
-        <p id="planetInfo"></p>
-        <p id="orbitInfo"></p>
-    </div>
-
-    <div id="timeScale">
-        Time Scale: <span id="timeValue">1x</span>
-        <br>
-        <input type="range" id="speedSlider" min="1" max="1000" value="1">
-    </div>
-
     <div id="controls">
         <button class="btn" id="toggleOrbits">Toggle Orbits</button>
-        <button class="btn" id="toggleRotation">Pause</button>
+        <button class="btn" id="toggleRotation">Stop Rotation</button>
         <button class="btn" id="resetCamera">Reset View</button>
-        <button class="btn" id="toggleLabels">Toggle Labels</button>
     </div>
 
     <script type="importmap">
@@ -110,29 +60,19 @@
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
         // Scene setup
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Label renderer
-        const labelRenderer = new CSS2DRenderer();
-        labelRenderer.setSize(window.innerWidth, window.innerHeight);
-        labelRenderer.domElement.style.position = 'absolute';
-        labelRenderer.domElement.style.top = '0px';
-        document.body.appendChild(labelRenderer.domElement);
-
         // Controls
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.minDistance = 20;
-        controls.maxDistance = 500;
-        camera.position.set(0, 100, 200);
+        camera.position.set(0, 30, 100);
+        controls.update();
 
         // Lights
         const ambientLight = new THREE.AmbientLight(0x333333);
@@ -142,42 +82,20 @@
         scene.add(sunLight);
 
         // Background stars
-        const starCount = 10000;
         const starGeometry = new THREE.BufferGeometry();
-        const starPositions = new Float32Array(starCount * 3);
-        const starColors = new Float32Array(starCount * 3);
-
-        for(let i = 0; i < starCount * 3; i += 3) {
-            const radius = Math.random() * 1000 + 500;
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos(Math.random() * 2 - 1);
-            
-            starPositions[i] = radius * Math.sin(phi) * Math.cos(theta);
-            starPositions[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
-            starPositions[i + 2] = radius * Math.cos(phi);
-
-            const color = new THREE.Color();
-            color.setHSL(Math.random(), 0.5, 0.8);
-            starColors[i] = color.r;
-            starColors[i + 1] = color.g;
-            starColors[i + 2] = color.b;
+        const starVertices = [];
+        for(let i = 0; i < 10000; i++) {
+            const x = THREE.MathUtils.randFloatSpread(2000);
+            const y = THREE.MathUtils.randFloatSpread(2000);
+            const z = THREE.MathUtils.randFloatSpread(2000);
+            starVertices.push(x, y, z);
         }
+        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        const starMaterial = new THREE.PointsMaterial({ color: 0xFFFFFF, size: 0.7 });
+        const stars = new THREE.Points(starGeometry, starMaterial);
+        scene.add(stars);
 
-        starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-        starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
-
-        const starField = new THREE.Points(
-            starGeometry,
-            new THREE.PointsMaterial({
-                size: 2,
-                vertexColors: true,
-                transparent: true,
-                opacity: 0.8
-            })
-        );
-        scene.add(starField);
-
-        // Planet data with real orbital periods (in Earth days)
+        // Planet data
         const planets = [
             {
                 name: 'Sun',
@@ -185,48 +103,42 @@
                 distance: 0,
                 color: 0xffdd00,
                 emissive: true,
-                period: 0,
-                info: 'The star at the center of our Solar System'
+                period: 0
             },
             {
                 name: 'Mercury',
                 radius: 1,
                 distance: 20,
                 color: 0x888888,
-                period: 88,
-                info: 'Smallest planet, closest to the Sun'
+                period: 88
             },
             {
                 name: 'Venus',
                 radius: 1.5,
                 distance: 30,
                 color: 0xffd700,
-                period: 225,
-                info: 'Second planet from the Sun, hottest in our system'
+                period: 225
             },
             {
                 name: 'Earth',
                 radius: 2,
                 distance: 40,
                 color: 0x2233ff,
-                period: 365.25,
-                info: 'Our home planet, the only known planet with life'
+                period: 365.25
             },
             {
                 name: 'Mars',
                 radius: 1.7,
                 distance: 50,
                 color: 0xff4400,
-                period: 687,
-                info: 'The Red Planet, fourth from the Sun'
+                period: 687
             },
             {
                 name: 'Jupiter',
                 radius: 4,
                 distance: 70,
                 color: 0xffaa88,
-                period: 4333,
-                info: 'Largest planet in our Solar System'
+                period: 4333
             },
             {
                 name: 'Saturn',
@@ -234,7 +146,6 @@
                 distance: 90,
                 color: 0xffcc88,
                 period: 10759,
-                info: 'Known for its beautiful rings',
                 hasRings: true
             },
             {
@@ -242,26 +153,23 @@
                 radius: 3,
                 distance: 110,
                 color: 0x88ffff,
-                period: 30687,
-                info: 'Ice giant with a tilted axis'
+                period: 30687
             },
             {
                 name: 'Neptune',
                 radius: 3,
                 distance: 130,
                 color: 0x4444ff,
-                period: 60190,
-                info: 'The windiest planet'
+                period: 60190
             }
         ];
 
         const planetObjects = [];
         const orbitLines = [];
-        const planetLabels = [];
 
         // Create planets
         planets.forEach((data, index) => {
-            // Create orbit line
+            // Create orbit
             if (index > 0) {
                 const orbitGeometry = new THREE.RingGeometry(data.distance, data.distance + 0.1, 64);
                 const orbitMaterial = new THREE.MeshBasicMaterial({
@@ -304,15 +212,6 @@
                 planet.add(rings);
             }
 
-            // Add label
-            const labelDiv = document.createElement('div');
-            labelDiv.className = 'planet-label';
-            labelDiv.textContent = data.name;
-            const label = new CSS2DObject(labelDiv);
-            label.position.set(0, data.radius + 2, 0);
-            planet.add(label);
-            planetLabels.push(label);
-
             // Add to scene
             const planetGroup = new THREE.Group();
             planet.position.x = data.distance;
@@ -320,90 +219,41 @@
             scene.add(planetGroup);
 
             // Calculate orbital speed (Mercury completes in 7 seconds)
-            const mercuryPeriod = 88; // days
-            const mercuryTime = 7; // seconds to complete orbit
-            const baseSpeed = (2 * Math.PI) / (mercuryTime * 60); // radians per frame at 60fps
+            const mercuryTime = 7; // seconds
+            const baseSpeed = (2 * Math.PI) / (mercuryTime * 60); // for 60fps
             const speedFactor = data.period > 0 
-                ? baseSpeed * (mercuryPeriod / data.period)
+                ? baseSpeed * (88 / data.period) 
                 : 0;
 
             planetObjects.push({
                 mesh: planet,
                 group: planetGroup,
-                data: data,
                 rotationSpeed: 0.02,
                 orbitSpeed: speedFactor
             });
         });
 
         // UI Elements
-        const info = document.getElementById('info');
-        const planetName = document.getElementById('planetName');
-        const planetInfo = document.getElementById('planetInfo');
-        const orbitInfo = document.getElementById('orbitInfo');
         const toggleOrbitsBtn = document.getElementById('toggleOrbits');
         const toggleRotationBtn = document.getElementById('toggleRotation');
         const resetCameraBtn = document.getElementById('resetCamera');
-        const toggleLabelsBtn = document.getElementById('toggleLabels');
-        const speedSlider = document.getElementById('speedSlider');
-        const timeValue = document.getElementById('timeValue');
 
-        let timeScale = 1;
         let rotationEnabled = true;
-        let labelsVisible = true;
 
         // Event handlers
-        speedSlider.addEventListener('input', (e) => {
-            timeScale = parseInt(e.target.value);
-            timeValue.textContent = timeScale + 'x';
-        });
-
         toggleOrbitsBtn.addEventListener('click', () => {
             orbitLines.forEach(orbit => orbit.visible = !orbit.visible);
         });
 
         toggleRotationBtn.addEventListener('click', () => {
             rotationEnabled = !rotationEnabled;
-            toggleRotationBtn.textContent = rotationEnabled ? 'Pause' : 'Resume';
+            toggleRotationBtn.textContent = rotationEnabled ? 'Stop Rotation' : 'Start Rotation';
         });
 
         resetCameraBtn.addEventListener('click', () => {
-            camera.position.set(0, 100, 200);
+            camera.position.set(0, 30, 100);
             camera.lookAt(0, 0, 0);
             controls.reset();
-        });
-
-        toggleLabelsBtn.addEventListener('click', () => {
-            labelsVisible = !labelsVisible;
-            planetLabels.forEach(label => {
-                label.visible = labelsVisible;
-            });
-        });
-
-        // Click interaction
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('click', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(
-                planetObjects.map(obj => obj.mesh)
-            );
-
-            if (intersects.length > 0) {
-                const planet = planetObjects.find(p => p.mesh === intersects[0].object);
-                planetName.textContent = planet.data.name;
-                planetInfo.textContent = planet.data.info;
-                orbitInfo.textContent = planet.data.period > 0 
-                    ? `Orbital period: ${planet.data.period} Earth days`
-                    : '';
-                info.style.display = 'block';
-            } else {
-                info.style.display = 'none';
-            }
         });
 
         // Animation
@@ -412,15 +262,13 @@
 
             if (rotationEnabled) {
                 planetObjects.forEach(obj => {
-                    obj.mesh.rotation.y += obj.rotationSpeed * timeScale;
-                    obj.group.rotation.y += obj.orbitSpeed * timeScale;
+                    obj.mesh.rotation.y += obj.rotationSpeed;
+                    obj.group.rotation.y += obj.orbitSpeed;
                 });
-                starField.rotation.y += 0.0001 * timeScale;
             }
 
             controls.update();
             renderer.render(scene, camera);
-            labelRenderer.render(scene, camera);
         }
 
         // Handle window resize
@@ -428,8 +276,9 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            labelRenderer.setSize(window.innerWidth, window.innerHeight);
         });
 
         animate();
     </script>
+</body>
+</html>
