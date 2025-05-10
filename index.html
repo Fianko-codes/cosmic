@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>realistic solar system - fianko-codes</title>
+    <title>immersive solar system - fianko-codes</title>
     <style>
         body { 
             margin: 0; 
@@ -50,6 +50,7 @@
             border-radius: 10px;
             border: 1px solid #0ff;
             color: #0ff;
+            font-size: 14px;
         }
 
         #speedSlider {
@@ -83,74 +84,92 @@
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // scene setup
+        // scene setup with enhanced far plane
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            logarithmicDepthBuffer: true  // better depth rendering
+        });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio); // sharper rendering
         document.body.appendChild(renderer.domElement);
 
         // texture loader
         const textureLoader = new THREE.TextureLoader();
 
-        // controls
+        // enhanced controls
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 20;
+        controls.maxDistance = 800;
         camera.position.set(0, 30, 100);
         controls.update();
 
-        // lights
-        const ambientLight = new THREE.AmbientLight(0x444444);  // brighter ambient light
+        // enhanced lighting setup
+        const ambientLight = new THREE.AmbientLight(0x666666);
         scene.add(ambientLight);
         
-        const sunLight = new THREE.PointLight(0xffffff, 2.5);
+        const sunLight = new THREE.PointLight(0xffffff, 3.5);
+        sunLight.position.set(0, 0, 0);
         scene.add(sunLight);
 
-        // background stars
+        const secondaryLight = new THREE.PointLight(0xffffff, 1);
+        secondaryLight.position.set(100, 100, 100);
+        scene.add(secondaryLight);
+
+        // enhanced background stars
         const starGeometry = new THREE.BufferGeometry();
         const starVertices = [];
-        for(let i = 0; i < 10000; i++) {
+        for(let i = 0; i < 15000; i++) {
             const x = THREE.MathUtils.randFloatSpread(2000);
             const y = THREE.MathUtils.randFloatSpread(2000);
             const z = THREE.MathUtils.randFloatSpread(2000);
             starVertices.push(x, y, z);
         }
         starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-        const starMaterial = new THREE.PointsMaterial({ color: 0xFFFFFF, size: 0.7 });
+        const starMaterial = new THREE.PointsMaterial({ 
+            color: 0xFFFFFF, 
+            size: 1.2,
+            transparent: true,
+            opacity: 0.8
+        });
         const stars = new THREE.Points(starGeometry, starMaterial);
         scene.add(stars);
 
-        // planet data
+        // enhanced planet data
         const planets = [
             {
                 name: 'sun',
-                radius: 8,
+                radius: 12,  // bigger sun
                 distance: 0,
                 color: 0xffffff,
                 emissive: true,
                 period: 0,
-                texture: 'sun.jpg'
+                texture: 'sun.jpg',
+                glowIntensity: 0.8
             },
             {
                 name: 'mercury',
-                radius: 1,
-                distance: 20,
+                radius: 2,  // increased sizes for better visibility
+                distance: 25,
                 color: 0xffffff,
                 period: 88,
                 texture: 'mercury.jpg'
             },
             {
                 name: 'venus',
-                radius: 1.5,
-                distance: 30,
+                radius: 2.8,
+                distance: 40,
                 color: 0xffffff,
                 period: 225,
                 texture: 'venus.jpg'
             },
             {
                 name: 'earth',
-                radius: 2,
-                distance: 40,
+                radius: 3,
+                distance: 55,
                 color: 0xffffff,
                 period: 365.25,
                 texture: 'earth.jpg',
@@ -158,24 +177,24 @@
             },
             {
                 name: 'mars',
-                radius: 1.7,
-                distance: 50,
+                radius: 2.5,
+                distance: 70,
                 color: 0xffffff,
                 period: 687,
                 texture: 'mars.jpg'
             },
             {
                 name: 'jupiter',
-                radius: 4,
-                distance: 70,
+                radius: 6,
+                distance: 95,
                 color: 0xffffff,
                 period: 4333,
                 texture: 'jupiter.jpg'
             },
             {
                 name: 'saturn',
-                radius: 3.5,
-                distance: 90,
+                radius: 5,
+                distance: 120,
                 color: 0xffffff,
                 period: 10759,
                 texture: 'saturn.jpg',
@@ -184,16 +203,16 @@
             },
             {
                 name: 'uranus',
-                radius: 3,
-                distance: 110,
+                radius: 4,
+                distance: 150,
                 color: 0xffffff,
                 period: 30687,
                 texture: 'uranus.jpg'
             },
             {
                 name: 'neptune',
-                radius: 3,
-                distance: 130,
+                radius: 4,
+                distance: 180,
                 color: 0xffffff,
                 period: 60190,
                 texture: 'neptune.jpg'
@@ -203,16 +222,16 @@
         const planetObjects = [];
         const orbitLines = [];
 
-        // create planets
+        // enhanced planet creation
         planets.forEach((data, index) => {
-            // create orbit
+            // create enhanced orbit lines
             if (index > 0) {
-                const orbitGeometry = new THREE.RingGeometry(data.distance, data.distance + 0.1, 64);
+                const orbitGeometry = new THREE.RingGeometry(data.distance, data.distance + 0.2, 128);
                 const orbitMaterial = new THREE.MeshBasicMaterial({
-                    color: 0xaaaaaa,  // much brighter orbit lines
+                    color: 0xffffff,
                     side: THREE.DoubleSide,
                     transparent: true,
-                    opacity: 0.5  // increased opacity
+                    opacity: 0.3
                 });
                 const orbit = new THREE.Mesh(orbitGeometry, orbitMaterial);
                 orbit.rotation.x = Math.PI / 2;
@@ -220,26 +239,30 @@
                 orbitLines.push(orbit);
             }
 
-            // create planet
+            // create enhanced planets
             const geometry = new THREE.SphereGeometry(data.radius, 64, 64);
             const texture = textureLoader.load(data.texture);
+            texture.anisotropy = renderer.capabilities.getMaxAnisotropy(); // sharper textures
+
             const material = new THREE.MeshPhongMaterial({
                 map: texture,
-                shininess: 5
+                shininess: 25,
+                emissiveIntensity: data.glowIntensity || 0
             });
 
             if (data.emissive) {
                 material.emissiveMap = texture;
-                material.emissive = new THREE.Color(0xffffff);
-                material.emissiveIntensity = 0.6;
+                material.emissive = new THREE.Color(0xffff80);
+                material.emissiveIntensity = 0.8;
             }
 
             const planet = new THREE.Mesh(geometry, material);
 
-            // add clouds for earth
+            // enhanced earth clouds
             if (data.name === 'earth') {
-                const cloudGeometry = new THREE.SphereGeometry(data.radius + 0.03, 64, 64);
+                const cloudGeometry = new THREE.SphereGeometry(data.radius + 0.05, 64, 64);
                 const cloudTexture = textureLoader.load(data.cloudsTexture);
+                cloudTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
                 const cloudMaterial = new THREE.MeshPhongMaterial({
                     map: cloudTexture,
                     transparent: true,
@@ -249,10 +272,11 @@
                 planet.add(clouds);
             }
 
-            // add rings for saturn
+            // enhanced saturn rings
             if (data.hasRings) {
-                const ringGeometry = new THREE.RingGeometry(data.radius * 1.4, data.radius * 2.2, 64);
+                const ringGeometry = new THREE.RingGeometry(data.radius * 1.4, data.radius * 2.4, 128);
                 const ringTexture = textureLoader.load(data.ringsTexture);
+                ringTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
                 const ringMaterial = new THREE.MeshBasicMaterial({
                     map: ringTexture,
                     side: THREE.DoubleSide,
@@ -264,15 +288,15 @@
                 planet.add(rings);
             }
 
-            // add to scene
+            // add to scene with enhanced positioning
             const planetGroup = new THREE.Group();
             planet.position.x = data.distance;
             planetGroup.add(planet);
             scene.add(planetGroup);
 
-            // calculate orbital speed (mercury completes in 7 seconds)
-            const mercuryTime = 7; // seconds
-            const baseSpeed = (2 * Math.PI) / (mercuryTime * 60); // for 60fps
+            // enhanced orbital speeds
+            const mercuryTime = 7;
+            const baseSpeed = (2 * Math.PI) / (mercuryTime * 60);
             const speedFactor = data.period > 0 
                 ? baseSpeed * (88 / data.period) 
                 : 0;
@@ -295,7 +319,7 @@
         let rotationEnabled = true;
         let timeScale = 1;
 
-        // event handlers
+        // enhanced event handlers
         speedSlider.addEventListener('input', (e) => {
             timeScale = parseInt(e.target.value);
             timeValue.textContent = timeScale + 'x';
@@ -316,7 +340,7 @@
             controls.reset();
         });
 
-        // animation
+        // enhanced animation loop
         function animate() {
             requestAnimationFrame(animate);
 
@@ -331,11 +355,12 @@
             renderer.render(scene, camera);
         }
 
-        // handle window resize
+        // enhanced window resize handler
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
         });
 
         animate();
